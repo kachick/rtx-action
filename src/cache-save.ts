@@ -15,6 +15,14 @@ async function cacheRTXTools(): Promise<void> {
   const state = core.getState('CACHE_KEY')
   const primaryKey = core.getState('PRIMARY_KEY')
   const cachePath = rtxDir()
+  const useCache = core.getBooleanInput('cache', {
+    required: false,
+    trimWhitespace: true
+  })
+
+  if (!useCache) {
+    throw new Error('disabled to use cache')
+  }
 
   if (!fs.existsSync(cachePath)) {
     throw new Error(`Cache folder path does not exist on disk: ${cachePath}`)

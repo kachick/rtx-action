@@ -15,6 +15,10 @@ inputs:
     required: false
     default: ${{ github.token }}
     description: The GITHUB_TOKEN secret
+  cache:
+    required: false
+    default: true
+    description: Cache the manager and plugins
 outputs::
   cache-hit:
     description: 'A boolean value to indicate if a cache was hit.'

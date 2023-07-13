@@ -15,9 +15,15 @@ async function run(): Promise<void> {
     required: false,
     trimWhitespace: true
   })
+  const useCache = core.getBooleanInput('cache', {
+    required: false,
+    trimWhitespace: true
+  })
   core.setSecret(githubToken)
   await setToolVersions()
-  await restoreRTXCache()
+  if (useCache) {
+    await restoreRTXCache()
+  }
   await setupRTX(rtxVersion, githubToken)
   await exec.exec('rtx', ['--version'])
   await exec.exec('rtx', ['install'])
