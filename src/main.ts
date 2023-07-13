@@ -45,6 +45,7 @@ async function restoreRTXCache(): Promise<void> {
 
 async function setupRTX(version: string, githubToken: string): Promise<void> {
   const rtxBinDir = path.join(rtxDir(), 'bin')
+  await fs.promises.mkdir(rtxBinDir, {recursive: true})
 
   if (version === 'latest') {
     const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`
@@ -66,8 +67,6 @@ async function setupRTX(version: string, githubToken: string): Promise<void> {
       {env: {GH_TOKEN: githubToken}}
     )
   }
-
-  await fs.promises.mkdir(rtxBinDir, {recursive: true})
 
   await exec.exec('chmod', ['+x', path.join(rtxBinDir, 'rtx')])
   core.addPath(rtxBinDir)

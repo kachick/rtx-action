@@ -71,6 +71,7 @@ async function restoreRTXCache() {
 }
 async function setupRTX(version, githubToken) {
     const rtxBinDir = path.join((0, utils_1.rtxDir)(), 'bin');
+    await fs.promises.mkdir(rtxBinDir, { recursive: true });
     if (version === 'latest') {
         const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`;
         await exec.exec('curl', [url, '--output', path.join(rtxBinDir, 'rtx')]);
@@ -88,7 +89,6 @@ async function setupRTX(version, githubToken) {
             path.join(rtxBinDir, 'rtx')
         ], { env: { GH_TOKEN: githubToken } });
     }
-    await fs.promises.mkdir(rtxBinDir, { recursive: true });
     await exec.exec('chmod', ['+x', path.join(rtxBinDir, 'rtx')]);
     core.addPath(rtxBinDir);
 }
