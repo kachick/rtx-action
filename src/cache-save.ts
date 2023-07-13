@@ -21,7 +21,8 @@ async function cacheRTXTools(): Promise<void> {
   })
 
   if (!useCache) {
-    throw new Error('disabled to use cache')
+    core.info('Cache is disabled, not saving cache')
+    return
   }
 
   if (!fs.existsSync(cachePath)) {
