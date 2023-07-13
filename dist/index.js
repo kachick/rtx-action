@@ -40,9 +40,22 @@ const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const utils_1 = __nccwpck_require__(918);
 async function run() {
+    const rtxVersion = core.getInput('rtx_version', { required: false, trimWhitespace: true }) ||
+        'latest';
+    const githubToken = core.getInput('github_token', {
+        required: false,
+        trimWhitespace: true
+    });
+    const useCache = core.getBooleanInput('cache', {
+        required: false,
+        trimWhitespace: true
+    });
+    core.setSecret(githubToken);
     await setToolVersions();
-    await restoreRTXCache();
-    await setupRTX();
+    if (useCache) {
+        await restoreRTXCache();
+    }
+    await setupRTX(rtxVersion, githubToken);
     await exec.exec('rtx', ['--version']);
     await exec.exec('rtx', ['install']);
     await setPaths();
@@ -62,11 +75,26 @@ async function restoreRTXCache() {
     core.saveState('CACHE_KEY', cacheKey);
     core.info(`rtx cache restored from key: ${cacheKey}`);
 }
-async function setupRTX() {
+async function setupRTX(version, githubToken) {
     const rtxBinDir = path.join((0, utils_1.rtxDir)(), 'bin');
-    const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`;
     await fs.promises.mkdir(rtxBinDir, { recursive: true });
-    await exec.exec('curl', [url, '--output', path.join(rtxBinDir, 'rtx')]);
+    if (version === 'latest') {
+        const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`;
+        await exec.exec('curl', [url, '--output', path.join(rtxBinDir, 'rtx')]);
+    }
+    else {
+        await exec.exec('gh', [
+            'release',
+            'download',
+            version,
+            '--pattern',
+            `*${getOS()}-${os.arch()}`,
+            '--repo',
+            'jdxcode/rtx',
+            '--output',
+            path.join(rtxBinDir, 'rtx')
+        ], { env: { GH_TOKEN: githubToken } });
+    }
     await exec.exec('chmod', ['+x', path.join(rtxBinDir, 'rtx')]);
     core.addPath(rtxBinDir);
 }

@@ -8,9 +8,23 @@ import * as path from 'path'
 import {rtxDir} from './utils'
 
 async function run(): Promise<void> {
+  const rtxVersion =
+    core.getInput('rtx_version', {required: false, trimWhitespace: true}) ||
+    'latest'
+  const githubToken = core.getInput('github_token', {
+    required: false,
+    trimWhitespace: true
+  })
+  const useCache = core.getBooleanInput('cache', {
+    required: false,
+    trimWhitespace: true
+  })
+  core.setSecret(githubToken)
   await setToolVersions()
-  await restoreRTXCache()
-  await setupRTX()
+  if (useCache) {
+    await restoreRTXCache()
+  }
+  await setupRTX(rtxVersion, githubToken)
   await exec.exec('rtx', ['--version'])
   await exec.exec('rtx', ['install'])
   await setPaths()
@@ -35,11 +49,31 @@ async function restoreRTXCache(): Promise<void> {
   core.info(`rtx cache restored from key: ${cacheKey}`)
 }
 
-async function setupRTX(): Promise<void> {
+async function setupRTX(version: string, githubToken: string): Promise<void> {
   const rtxBinDir = path.join(rtxDir(), 'bin')
-  const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`
   await fs.promises.mkdir(rtxBinDir, {recursive: true})
-  await exec.exec('curl', [url, '--output', path.join(rtxBinDir, 'rtx')])
+
+  if (version === 'latest') {
+    const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`
+    await exec.exec('curl', [url, '--output', path.join(rtxBinDir, 'rtx')])
+  } else {
+    await exec.exec(
+      'gh',
+      [
+        'release',
+        'download',
+        version,
+        '--pattern',
+        `*${getOS()}-${os.arch()}`,
+        '--repo',
+        'jdxcode/rtx',
+        '--output',
+        path.join(rtxBinDir, 'rtx')
+      ],
+      {env: {GH_TOKEN: githubToken}}
+    )
+  }
+
   await exec.exec('chmod', ['+x', path.join(rtxBinDir, 'rtx')])
   core.addPath(rtxBinDir)
 }

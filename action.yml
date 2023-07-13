@@ -8,6 +8,17 @@ inputs:
   tool_versions:
     required: false
     description: If present, this value will be written to the .tool-versions file
+  rtx_version:
+    required: false
+    description: rtx manager version
+  github_token:
+    required: false
+    default: ${{ github.token }}
+    description: The GITHUB_TOKEN secret
+  cache:
+    required: false
+    default: true
+    description: Cache the manager and plugins
 outputs::
   cache-hit:
     description: 'A boolean value to indicate if a cache was hit.'
