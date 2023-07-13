@@ -40,11 +40,18 @@ const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const utils_1 = __nccwpck_require__(918);
 async function run() {
+    const rtxVersion = core.getInput("rtx_version", { required: false, trimWhitespace: true }) ||
+        "latest";
+    const githubToken = core.getInput("github_token", {
+        required: false,
+        trimWhitespace: true,
+    });
+    core.setSecret(githubToken);
     await setToolVersions();
     await restoreRTXCache();
-    await setupRTX();
-    await exec.exec('rtx', ['--version']);
-    await exec.exec('rtx', ['install']);
+    await setupRTX(rtxVersion, githubToken);
+    await exec.exec("rtx", ["--version"]);
+    await exec.exec("rtx", ["install"]);
     await setPaths();
 }
 exports.run = run;
@@ -52,30 +59,45 @@ async function restoreRTXCache() {
     const cachePath = (0, utils_1.rtxDir)();
     const fileHash = await glob.hashFiles(`**/.tool-versions\n**/.rtx.toml`);
     const primaryKey = `rtx-tools-${getOS()}-${os.arch()}-${fileHash}`;
-    core.saveState('PRIMARY_KEY', primaryKey);
+    core.saveState("PRIMARY_KEY", primaryKey);
     const cacheKey = await cache.restoreCache([cachePath], primaryKey);
-    core.setOutput('cache-hit', Boolean(cacheKey));
+    core.setOutput("cache-hit", Boolean(cacheKey));
     if (!cacheKey) {
         core.info(`rtx cache not found for ${getOS()}-${os.arch()} tool versions`);
         return;
     }
-    core.saveState('CACHE_KEY', cacheKey);
+    core.saveState("CACHE_KEY", cacheKey);
     core.info(`rtx cache restored from key: ${cacheKey}`);
 }
-async function setupRTX() {
-    const rtxBinDir = path.join((0, utils_1.rtxDir)(), 'bin');
-    const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`;
+async function setupRTX(version, githubToken) {
+    const rtxBinDir = path.join((0, utils_1.rtxDir)(), "bin");
+    if (version === "latest") {
+        const url = `https://rtx.pub/rtx-latest-${getOS()}-${os.arch()}`;
+        await exec.exec("curl", [url, "--output", path.join(rtxBinDir, "rtx")]);
+    }
+    else {
+        await exec.exec("gh", [
+            "release",
+            "download",
+            version,
+            "--pattern",
+            `*${getOS()}-${os.arch()}`,
+            "--repo",
+            "jdxcode/rtx",
+            "--output",
+            path.join(rtxBinDir, "rtx"),
+        ], { env: { GH_TOKEN: githubToken } });
+    }
     await fs.promises.mkdir(rtxBinDir, { recursive: true });
-    await exec.exec('curl', [url, '--output', path.join(rtxBinDir, 'rtx')]);
-    await exec.exec('chmod', ['+x', path.join(rtxBinDir, 'rtx')]);
+    await exec.exec("chmod", ["+x", path.join(rtxBinDir, "rtx")]);
     core.addPath(rtxBinDir);
 }
 // returns true if tool_versions was set
 async function setToolVersions() {
-    const toolVersions = core.getInput('tool_versions', { required: false });
+    const toolVersions = core.getInput("tool_versions", { required: false });
     if (toolVersions) {
-        await fs.promises.writeFile('.tool-versions', toolVersions, {
-            encoding: 'utf8'
+        await fs.promises.writeFile(".tool-versions", toolVersions, {
+            encoding: "utf8",
         });
         return true;
     }
@@ -83,8 +105,8 @@ async function setToolVersions() {
 }
 function getOS() {
     switch (process.platform) {
-        case 'darwin':
-            return 'macos';
+        case "darwin":
+            return "macos";
         default:
             return process.platform;
     }
@@ -95,8 +117,8 @@ async function setPaths() {
     }
 }
 async function getBinPaths() {
-    const output = await exec.getExecOutput('rtx', ['bin-paths']);
-    return output.stdout.split('\n');
+    const output = await exec.getExecOutput("rtx", ["bin-paths"]);
+    return output.stdout.split("\n");
 }
 if (require.main === require.cache[eval('__filename')]) {
     try {
