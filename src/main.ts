@@ -17,6 +17,15 @@ async function run(): Promise<void> {
 }
 
 async function restoreRTXCache(): Promise<void> {
+  const useCache = core.getBooleanInput('use_cache', {
+    required: false,
+    trimWhitespace: true
+  })
+  if (!useCache) {
+    core.info('disabled "use_cache", rtx does not restore cache')
+    return
+  }
+
   const cachePath = rtxDir()
   const fileHash = await glob.hashFiles(`**/.tool-versions\n**/.rtx.toml`)
   const primaryKey = `rtx-tools-${getOS()}-${os.arch()}-${fileHash}`

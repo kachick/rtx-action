@@ -49,6 +49,14 @@ async function run() {
 }
 exports.run = run;
 async function restoreRTXCache() {
+    const useCache = core.getBooleanInput('use_cache', {
+        required: false,
+        trimWhitespace: true
+    });
+    if (!useCache) {
+        core.info('disabled "use_cache", rtx does not restore cache');
+        return;
+    }
     const cachePath = (0, utils_1.rtxDir)();
     const fileHash = await glob.hashFiles(`**/.tool-versions\n**/.rtx.toml`);
     const primaryKey = `rtx-tools-${getOS()}-${os.arch()}-${fileHash}`;
